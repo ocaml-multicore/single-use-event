@@ -1,0 +1,5 @@
+(mdx
+ (package single-use-event)
+ (deps
+  (package single-use-event))
+ (files README.md))

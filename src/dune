@@ -1,0 +1,3 @@
+(library
+ (name Single_use_event)
+ (public_name single-use-event))

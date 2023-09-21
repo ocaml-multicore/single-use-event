@@ -11,6 +11,7 @@ bug-reports: "https://github.com/ocaml-multicore/single-use-event/issues"
 depends: [
   "dune" {>= "3.8"}
   "ocaml" {>= "5.0.0"}
+  "backoff" {>= "0.1.0" & with-test}
   "mdx" {>= "2.3.0" & with-test}
   "odoc" {with-doc}
 ]

@@ -12,5 +12,6 @@
  (description "A low level mechanism intended for writing higher level libraries that need to block in a scheduler friendly manner.")
  (depends
   (ocaml (>= 5.0.0))
+  (backoff (and (>= 0.1.0) :with-test))
   (mdx (and (>= 2.3.0) :with-test))))
 (using mdx 0.4)

@@ -56,8 +56,8 @@
   | Single_use_event.Await sue -&gt;
     Some (fun (k: (a, _) Effect.Deep.continuation) -&gt;
       if
-        (* We first check if the event has already been signaled to avoid
-           allocating the [enqueue] closure: *)
+        (* We first check if the event has already been signaled as an
+           optimization to avoid allocating the [enqueue] closure: *)
         not (Single_use_event.is_signaled sue) &amp;&amp;
         let enqueue () =
           (* TODO: Enqueue [Effect.Deep.continue k ()] to the scheduler's

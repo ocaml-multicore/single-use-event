@@ -10,9 +10,9 @@
      resumer side to find. *)
 
   if Single_use_event.is_signaled sue then
-    (* Resumer side signaled before suspend.  This can happen e.g. when the
-       [sue] is inserted into many locations and polling the signaled state
-       can be used to avoid work.
+    (* Resumer side signaled before suspend.  This can happen e.g. when
+       the [sue] is inserted into many locations and polling the signaled
+       state can be used to avoid work.
 
        TODO: Clean up accordingly, i.e. remove references to [sue] that
        were inserted before getting the signal.
@@ -28,8 +28,9 @@
 
          TODO: Produce appropriate result.
 
-         Typically, a result is read from the location where it was written
-         before [Single_use_event.signal sue] by the resumer side. *)
+         Typically, a result is read from the location where it was
+         written before [Single_use_event.signal sue] by the resumer
+         side. *)
     | exception cancellation_exn -&gt;
       (* Fiber was cancelled.
 

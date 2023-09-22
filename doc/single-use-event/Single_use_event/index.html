@@ -1,46 +1,47 @@
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml"><head><title>Single_use_event (single-use-event.Single_use_event)</title><link rel="stylesheet" href="../../odoc.support/odoc.css"/><meta charset="utf-8"/><meta name="generator" content="odoc 2.2.1"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/><script src="../../odoc.support/highlight.pack.js"></script><script>hljs.initHighlightingOnLoad();</script></head><body class="odoc"><nav class="odoc-nav"><a href="../index.html">Up</a> – <a href="../index.html">single-use-event</a> &#x00BB; Single_use_event</nav><header class="odoc-preamble"><h1>Module <code><span>Single_use_event</span></code></h1><p>A scheduler independent blocking mechnanism.</p><p>This is designed as a low level mechanism intended for writing higher level libraries that need to block in a scheduler friendly manner.</p><p>A library that needs to suspend and later resume the current thread of execution can <a href="#val-create"><code>create</code></a> a single use event, arrange <a href="#val-signal"><code>signal</code></a> to be called on it, and <a href="#val-await"><code>await</code></a> for the call.</p><p>To provide an efficient and scheduler friendly implementation of the mechanism, schedulers may handle the <a href="#extension-Await"><code>Await</code></a> effect.</p><p>The mechanism is designed to be minimalistic and to straightforwardly, safely, and efficiently handle all the basic concurrency issues that might arise, namely the essential race conditions due to the nature of the mechanism, within the scope of the provided functionality.</p><p>The only place to handle cancellation is at the point of calling <a href="#val-await"><code>await</code></a>, which may raise an exception to signal cancellation. The caller must then take care to clean up.</p><p>No mechanism is provided to communicate any result with the signal. That can be done outside of the mechanism and is often not needed.</p><p>This mechanism is entirely first-order. A handler for the <a href="#extension-Await"><code>Await</code></a> effect does not need to call arbitrary code outside of the scheduler implementation. Both the scheduler side and the suspend/resume side are only responsible for their own concerns.</p></header><nav class="odoc-toc"><ul><li><a href="#interface-for-suspending">Interface for suspending</a></li><li><a href="#interface-for-resuming">Interface for resuming</a></li><li><a href="#interface-for-schedulers">Interface for schedulers</a></li></ul></nav><div class="odoc-content"><h3 id="interface-for-suspending"><a href="#interface-for-suspending" class="anchor"></a>Interface for suspending</h3><div class="odoc-spec"><div class="spec type anchored" id="type-t"><a href="#type-t" class="anchor"></a><code><span><span class="keyword">type</span> t</span></code></div><div class="spec-doc"><p>Represents a single use event. A single use event can be in one of three states in order:</p><ol><li>initial,</li><li>attached, and</li><li>signaled.</li></ol><p>The state of a single use event can only advance monotonically.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-create"><a href="#val-create" class="anchor"></a><code><span><span class="keyword">val</span> create : <span>unit <span class="arrow">&#45;&gt;</span></span> <a href="#type-t">t</a></span></code></div><div class="spec-doc"><p><code>create ()</code> allocates a new single use event in the initial state.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-is_signaled"><a href="#val-is_signaled" class="anchor"></a><code><span><span class="keyword">val</span> is_signaled : <span><a href="#type-t">t</a> <span class="arrow">&#45;&gt;</span></span> bool</span></code></div><div class="spec-doc"><p><code>is_signaled sue</code> determines whether the single use event <code>sue</code> is in the signaled state.</p><p>This can be used to poll the state of a single use event and avoid work, but this should not be used as a substitute for <a href="#val-await"><code>await</code></a>.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-await"><a href="#val-await" class="anchor"></a><code><span><span class="keyword">val</span> await : <span><a href="#type-t">t</a> <span class="arrow">&#45;&gt;</span></span> unit</span></code></div><div class="spec-doc"><p><code>await sue</code> waits for the single use event <code>sue</code> to be set to the signaled state. <code>await sue</code> must be called at most once per single use event <code>sue</code>.</p><p>Instead of returning, <code>await sue</code> may raise an exception to signal cancellation. In either case the caller of <code>await sue</code> is responsible for cleaning up. Usually this means making sure that no references to the single use event <code>sue</code> remain to avoid space leaks.</p><ul class="at-tags"><li class="raises"><span class="at-tag">raises</span> <span class="value">Invalid_argument</span> <p>if the single use event <code>sue</code> was in the attached state.</p></li></ul></div></div><p>Here is a template for suspending:</p><pre class="language-ocaml"><code>let suspend _ =
-  (* Typically, at this point or just before the [await], a location for
-     the resumer side has been published where the result will be written
-     to by the resumer side. *)
+  (* Typically, at this point or just before the [await], a location has
+     been published where the result will be written to by the resumer
+     side. *)
 
   let sue = Single_use_event.create () in
 
-  (* Typically, at this point, references to [sue] are stored in shared
-     data structures for the resumer side to find. *)
+  (* TODO: Store references to [sue] in shared data structures for the
+     resumer side to find. *)
 
   if Single_use_event.is_signaled sue then
     (* Resumer side signaled before suspend.  This can happen e.g. when the
-       [sue] is inserted into many location and polling the signaled state
+       [sue] is inserted into many locations and polling the signaled state
        can be used to avoid work.
 
-       Clean up accordingly, i.e. remove references to [sue] that were
-       inserted before getting the signal.
+       TODO: Clean up accordingly, i.e. remove references to [sue] that
+       were inserted before getting the signal.
 
-       Produce appropriate result. *)
+       TODO: Produce appropriate result. *)
   else
     match Single_use_event.await sue with
     | () -&gt;
       (* Fiber was resumed.
 
-         Clean up accordingly, i.e. remove any remaining references to
-         [sue].
+         TODO: Clean up accordingly, i.e. remove any remaining references
+         to [sue].
 
-         Produce appropriate result.
+         TODO: Produce appropriate result.
 
          Typically, a result is read from the location where it was written
          before [Single_use_event.signal sue] by the resumer side. *)
     | exception cancellation_exn -&gt;
       (* Fiber was cancelled.
 
-         Clean up accordingly, i.e. remove all references to [sue]. *)
+         TODO: Clean up accordingly, i.e. remove all references to
+         [sue]. *)
 
       raise cancellation_exn</code></pre><h3 id="interface-for-resuming"><a href="#interface-for-resuming" class="anchor"></a>Interface for resuming</h3><div class="odoc-spec"><div class="spec value anchored" id="val-signal"><a href="#val-signal" class="anchor"></a><code><span><span class="keyword">val</span> signal : <span><a href="#type-t">t</a> <span class="arrow">&#45;&gt;</span></span> unit</span></code></div><div class="spec-doc"><p>After <code>signal sue</code> returns, the single use event <code>sue</code> will be in the signaled state. If the single use event <code>sue</code> was in the attached state, the attached action will be called.</p></div></div><p>Here is a template for resuming:</p><pre class="language-ocaml"><code>let resume _ =
   (* Typically, at this point, the result has been atomically written to
       some data structure that the suspend side has access to. *)
 
   let sue =
-    (* Obtain [sue] from shared data structure.
+    (* TODO: Obtain [sue] from shared data structure.
 
        Typically at least one specific reference to [sue] is also removed
        at this point. *)
@@ -58,22 +59,23 @@
            allocating the [enqueue] closure: *)
         not (Single_use_event.is_signaled sue) &amp;&amp;
         let enqueue () =
-          (* Enqueues [Effect.Deep.continue k ()] to the scheduler's data
-             structure for ready fibers.
+          (* TODO: Enqueue [Effect.Deep.continue k ()] to the scheduler's
+             data structure for ready fibers.
 
              [Single_use_event] guarantees this is called at most once. *)
         in
         Single_use_event.try_attach enqueue
       then begin
         (* If the scheduler supports cancellation, then one would likely
-           register a cancellation action for the fiber at this point: *)
+           register a cancellation action for the fiber at this point.
+
+           TODO: Remove or edit the sample code below: *)
 
         set_cancellation_action (fun cancellation_exn -&gt;
           if Single_use_event.try_unattach sue then
             (* Cancellation won the race, so at this point the fiber
                should be enqueued to be discontinued with the
                [cancellation_exn]. *)
-
           else
             (* [Single_use_event.signal sue] won the race and [enqueue]
                has been or will be called. *)
